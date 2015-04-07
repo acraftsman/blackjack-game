@@ -1,23 +1,26 @@
-# 1. 得到一副牌,并洗牌
-# 2. 给玩家发一张牌，给庄家发一张牌；再给玩家发一张牌，再给庄家发一张牌。算牌
-#    如果玩家有一张A一张J（即“blackjack")，
-#    而此时庄家没有blackjack，则玩家赢。反之，庄家赢。
-#    如果都是blackjack，则为平局
-# 3. 如果刚开始没人有blackjack，玩家选择要牌(hit)或者停牌(stay)：
-#    a)如果选择要牌，给玩家发一张牌：
-#      如果玩家的点数小于等于21点，还可以继续选择要牌或停牌；
-#      如果玩家的点数大于21点，玩家bust，庄家赢！
-#    b)如果选择停牌，保存玩家的总点数，轮到庄家。
-# 4. 如果庄家的点数小于17，则必须要牌；如果庄家的点数大于等于17，则必须停牌。
-#    当庄家的点数大于21点时，庄家bust，玩家赢
-# 5. 如果玩家和庄家都没有bust，最后比较庄家和玩家的点数，点数大者赢，点数相同则为平局。
+# 1. get a deck and shuffle it
+# 2. deal a card to player, deal a card to dealer. Once again.
+#    calculate total. There are three situations:
+#    1) If player has a "Ace" and a "Jack", however dealer doesn't hit blackjack at this point. Player won!  
+#    2) Conversely, dealer won!
+#    3) If they all hit the blackjack. It's a tie.
+# 3. If none of the them occurred in step 2, player should choose to hit or stay.
+#    1) If player choose to hit, deal a card to it. and then,
+#       If player's total points less than or equal to UPPER_LIMIT_POINT, player should choose to hit or stay once more.
+#       If player's total points greater than UPPER_LIMIT_POINT, player busted. Dealer won!
+#    2) If player choose to stay, save the total point of player's, turn to dealer.
+# 4. If dealer's total points less than 17, it must hit. 
+#    If dealer's total points great than or equal to 17, it must stay.
+#    If dealer's total points great than UPPER_LIMIT_POINT, it busted. Player won!
+# 5. If they all have not busted finnally, we should compare the total points. The greater one win the game. 
+#    If their points are equivalent, it is a tie.
 require "pry"
 
 def prompt(msg)
-  puts "=> " + msg
+  puts "=> #{msg}"
 end
 def say_result(msg)
-  puts "===== " + msg + " ====="
+  puts "===== #{msg} ====="
 end
 def deal_card(deck) #[["H", "2"], ["H", "3"], ...]
   deck.pop
@@ -36,56 +39,51 @@ def calculate_total(cards)
   a_arr = cards_arr.select{ |e| e == 'A'}
   a_arr.each do
     total += 1
-    if total > 21
+    if total > UPPER_LIMIT_POINT
       total -= 10
     end
   end
   return total
 end
 
-def show_cards(player_cards, dealer_cards, player_total, dealer_total)
-  prompt "You have: #{player_cards}, for a total of #{player_total}"
-  prompt "Dealer has: #{dealer_cards}, for a total of #{dealer_total}"
-end
-
 # 1
-suits = ['H', 'S', 'C', 'D']
-cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-deck = suits.product(cards)
+SUITS = ['H', 'S', 'C', 'D']
+CARDS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+deck = SUITS.product(CARDS)
 deck.shuffle!
+UPPER_LIMIT_POINT = 21
 
 # 2
 player_cards = []
 dealer_cards = []
-player_cards << deal_card(deck)
-dealer_cards << deal_card(deck)
-player_cards << deal_card(deck)
-dealer_cards << deal_card(deck)
-# p player_cards 
-# p dealer_cards
+2.times do
+  player_cards << deal_card(deck)
+  dealer_cards << deal_card(deck)
+end
 c = 0
 dealer_total = 0
 player_total = calculate_total(player_cards)
 dealer_total = calculate_total(dealer_cards)
-show_cards(player_cards,dealer_cards,player_total,dealer_total)
-if player_total == 21 and dealer_total == 21
-  say_result "It's a tie"
+prompt "You have: #{player_cards}, for a total of #{player_total}"
+prompt "Dealer has: #{dealer_cards[1]} and ...}"
+if player_total == UPPER_LIMIT_POINT and dealer_total == UPPER_LIMIT_POINT
+  say_result "It's a tie (Your total: #{player_total}, dealer total: #{dealer_total})"
   exit
-elsif player_total == 21
-  say_result "Blackjack! You won!"
+elsif player_total == UPPER_LIMIT_POINT
+  say_result "Blackjack! You won! (Your total: #{player_total}, dealer total: #{dealer_total})"
   exit
-elsif dealer_total == 21
-  say_result "Blackjack! Dealer won!"
+elsif dealer_total == UPPER_LIMIT_POINT
+  say_result "Blackjack! Dealer won! (Your total: #{player_total}, dealer total: #{dealer_total})"
   exit
 end
 
 # 3
 # player turn
-while player_total < 21 
+while player_total < UPPER_LIMIT_POINT 
   begin
     print "Please choose: 1)Hit 2)Stand : "
     choose = gets.chomp.to_i
-  end while choose != 1 and choose != 2 
+  end until choose == 1 || choose == 2 
     if choose == 1
       player_cards << deal_card(deck)
       prompt "Your cards: #{player_cards} "
@@ -93,35 +91,39 @@ while player_total < 21
       break
     end
   player_total = calculate_total(player_cards)
-  prompt "Your total: #{player_total}"
+  prompt "Your total: #{player_total} "
 end
 # p player_total
-if player_total > 21
-  say_result "Sorry, you busted. You lose!"
+if player_total > UPPER_LIMIT_POINT
+  say_result "Sorry, you busted. You lose! (Your total: #{player_total}, dealer total: #{dealer_total})"
   exit
 end
 
 # dealer turn 
-while dealer_total < 21
+while dealer_total < UPPER_LIMIT_POINT
   if dealer_total < 17
     dealer_cards << deal_card(deck)
     dealer_total = calculate_total(dealer_cards)
     next
-  elsif dealer_total >=17 and dealer_total <= 21
+  elsif dealer_total >=17 && dealer_total <= UPPER_LIMIT_POINT
     break
   else
-    say_result "Congratulation! Dealer busted. You won!"
+    say_result "Congratulation! Dealer busted. You won! (Your total: #{player_total}; Dealer total: #{dealer_total})"
     exit
   end
+end
+if dealer_total > UPPER_LIMIT_POINT
+  say_result "Congratulation, dealer busted. You won! (Your total: #{player_total}, dealer total: #{dealer_total})"
+  exit
 end
 
 # compare
 if player_total == dealer_total
   say_result "It's a tie"
 elsif player_total > dealer_total
-  say_result "Congratulation, you won! Your total: #{player_total}, dealer total: #{dealer_total}"
+  say_result "Congratulation, you won! (Your total: #{player_total}, dealer total: #{dealer_total})"
 else
-  say_result "Sorry, dealer won! Your total: #{player_total}, dealer total: #{dealer_total}"
+  say_result "Sorry, dealer won! (Your total: #{player_total}, dealer total: #{dealer_total})"
 end
 
 
